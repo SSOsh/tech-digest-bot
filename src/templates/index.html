@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Digest Bot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="url"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #0052a3;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            padding: 8px 16px;
+            width: auto;
+            font-size: 14px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .sub-list {
+            list-style: none;
+        }
+
+        .sub-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sub-item:last-child {
+            border-bottom: none;
+        }
+
+        .sub-info {
+            font-size: 14px;
+        }
+
+        .sub-info strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .sub-info span {
+            color: #666;
+        }
+
+        .footer {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📰 Tech Digest Bot</h1>
+        <p class="subtitle">매일 아침 8시, 관심 있는 기술 뉴스를 받아보세요</p>
+
+        {% if request.query_params.get('success') %}
+        <div class="alert alert-success">{{ request.query_params.get('success') }}</div>
+        {% endif %}
+
+        {% if request.query_params.get('error') %}
+        <div class="alert alert-error">{{ request.query_params.get('error') }}</div>
+        {% endif %}
+
+        <div class="card">
+            <h2>구독 신청</h2>
+            <form action="/subscribe" method="post">
+                <div class="form-group">
+                    <label>알림 방식</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="notify_type" value="email" checked onchange="toggleNotifyType()">
+                            이메일
+                        </label>
+                        <label>
+                            <input type="radio" name="notify_type" value="slack" onchange="toggleNotifyType()">
+                            Slack
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="email-group">
+                    <label for="email">이메일 주소</label>
+                    <input type="email" id="email" name="email" placeholder="your@email.com">
+                </div>
+
+                <div class="form-group hidden" id="slack-group">
+                    <label for="slack_webhook">Slack Webhook URL</label>
+                    <input type="url" id="slack_webhook" name="slack_webhook" placeholder="https://hooks.slack.com/services/...">
+                    <p class="help-text">Slack 앱에서 Incoming Webhook을 생성하세요</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="keywords">키워드 (선택)</label>
+                    <input type="text" id="keywords" name="keywords" placeholder="python, kubernetes, ai">
+                    <p class="help-text">쉼표로 구분, 비워두면 전체 수신</p>
+                </div>
+
+                <div class="form-group">
+                    <label>소스 선택</label>
+                    <div class="checkbox-group">
+                        {% for id, source in sources.items() %}
+                        <label>
+                            <input type="checkbox" name="sources" value="{{ id }}" checked>
+                            {{ source.name }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="min_points">최소 점수 (GeekNews)</label>
+                    <input type="number" id="min_points" name="min_points" value="0" min="0">
+                    <p class="help-text">GeekNews 추천 점수 필터 (0이면 필터 없음)</p>
+                </div>
+
+                <button type="submit" class="btn">구독하기</button>
+            </form>
+        </div>
+
+        {% if subscriptions %}
+        <div class="card">
+            <h2>구독 목록</h2>
+            <ul class="sub-list">
+                {% for sub in subscriptions %}
+                <li class="sub-item">
+                    <div class="sub-info">
+                        <strong>{{ sub.email or sub.slack_webhook[:40] + '...' }}</strong>
+                        <span>
+                            {% if sub.keywords %}키워드: {{ sub.keywords }}{% else %}전체{% endif %}
+                            | {{ sub.sources if sub.sources else '전체 소스' }}
+                        </span>
+                    </div>
+                    <form action="/unsubscribe/{{ sub.id }}" method="post" style="margin: 0;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('구독을 취소하시겠습니까?')">취소</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <p class="footer">
+            매일 오전 8시(KST)에 전날 뉴스를 발송합니다
+        </p>
+    </div>
+
+    <script>
+        function toggleNotifyType() {
+            const emailRadio = document.querySelector('input[value="email"]');
+            const emailGroup = document.getElementById('email-group');
+            const slackGroup = document.getElementById('slack-group');
+
+            if (emailRadio.checked) {
+                emailGroup.classList.remove('hidden');
+                slackGroup.classList.add('hidden');
+            } else {
+                emailGroup.classList.add('hidden');
+                slackGroup.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
