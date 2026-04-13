@@ -1,0 +1,13 @@
+[project]
+name = "geeknews-slack-bot"
+version = "0.1.0"
+description = "GeekNews 맞춤형 슬랙 알림 봇"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
