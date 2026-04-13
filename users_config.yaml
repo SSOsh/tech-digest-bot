@@ -1,7 +1,6 @@
 # Tech Digest Bot 설정
 #
 # 환경변수:
-#   SLACK_WEBHOOK_{USER_ID} - Slack Webhook URL
 #   SMTP_HOST     - SMTP 서버 (기본: smtp.gmail.com)
 #   SMTP_PORT     - SMTP 포트 (기본: 587)
 #   SMTP_USER     - Gmail 주소
@@ -13,8 +12,8 @@
 
 users:
   - id: user1
-    slack: true
-    email: null
+    slack: false
+    email: code.madang.works@gmail.com
 
     sources:
       - geeknews
@@ -29,5 +28,5 @@ users:
       - ai
       - llm
 
-    min_points: 20  # geeknews만 적용
-    hours: 72       # 최근 3일
+    min_points: 20
+    hours: 72
