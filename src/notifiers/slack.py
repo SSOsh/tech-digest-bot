@@ -64,7 +64,7 @@ class SlackNotifier(Notifier):
                 }
             )
 
-            for article in source_articles[:5]:
+            for article in source_articles:
                 points_text = f" | :thumbsup: {article.points}P" if article.points else ""
                 blocks.append(
                     {

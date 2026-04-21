@@ -45,7 +45,7 @@ class EmailNotifier(Notifier):
         sections = []
         for source_name, source_articles in by_source.items():
             items = []
-            for article in source_articles[:5]:
+            for article in source_articles:
                 points = f" <span style='color: #666;'>({article.points}P)</span>" if article.points else ""
                 items.append(
                     f'<li style="margin-bottom: 8px;">'
@@ -93,7 +93,7 @@ class EmailNotifier(Notifier):
         for source_name, source_articles in by_source.items():
             lines.append(f"\n## {source_name} ({len(source_articles)}건)")
             lines.append("-" * 30)
-            for article in source_articles[:5]:
+            for article in source_articles:
                 points = f" ({article.points}P)" if article.points else ""
                 lines.append(f"• {article.title}{points}")
                 lines.append(f"  {article.url}")

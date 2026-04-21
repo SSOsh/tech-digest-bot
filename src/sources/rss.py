@@ -6,6 +6,7 @@ import feedparser
 import requests
 
 from src.sources.base import Article, Source
+from src.filter import matches_keywords
 
 REQUEST_TIMEOUT = 15
 REQUEST_DELAY = 0.5
@@ -51,8 +52,17 @@ class RSSSource(Source):
                 raise e
         return []
 
-    def fetch_articles(self, hours: int = 24) -> list[Article]:
-        """RSS 피드에서 기사 수집"""
+    def fetch_articles(
+        self, hours: int = 24, top_n: int | None = None, limit: int | None = None, keywords: list[str] | None = None
+    ) -> list[Article]:
+        """RSS 피드에서 기사 수집
+
+        Args:
+            hours: 수집할 시간 범위
+            top_n: 사용하지 않음 (RSS는 점수 지원 안 함)
+            limit: 최대 기사 수 제한 (None이면 전체)
+            keywords: 키워드 필터 (제목 매칭)
+        """
         try:
             entries = self._parse_feed()
         except Exception as e:
@@ -63,14 +73,23 @@ class RSSSource(Source):
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
 
         for entry in entries:
+            # limit이 설정된 경우 조기 종료
+            if limit is not None and len(articles) >= limit:
+                break
+
             try:
-                # 발행일 파싱
+                # 발행일 파싱 (타임존 고려)
                 published = entry.get("published_parsed") or entry.get("updated_parsed")
                 if published:
+                    # struct_time을 datetime으로 변환 (UTC로 간주)
                     pub_dt = datetime(*published[:6], tzinfo=timezone.utc)
+
+                    # 일부 RSS는 로컬 타임존 정보를 제공하지 않으므로,
+                    # published_parsed는 항상 UTC로 처리됨 (feedparser 스펙)
                     if pub_dt < cutoff:
                         continue
                 else:
+                    # 발행일이 없으면 현재 시간 사용 (필터링되지 않도록)
                     pub_dt = datetime.now(timezone.utc)
 
                 title = entry.get("title", "").strip()
@@ -79,16 +98,21 @@ class RSSSource(Source):
                 if not title or not url:
                     continue
 
-                articles.append(
-                    Article(
-                        title=title,
-                        url=url,
-                        source_id=self._id,
-                        source_name=self._name,
-                        points=None,
-                        published_at=pub_dt,
-                    )
+                # 키워드 필터링
+                temp_article = Article(
+                    title=title,
+                    url=url,
+                    source_id=self._id,
+                    source_name=self._name,
+                    points=None,
+                    published_at=pub_dt,
                 )
+
+                if keywords and not matches_keywords(temp_article, keywords):
+                    continue
+
+                articles.append(temp_article)
+
             except Exception as e:
                 print(f"[WARN] {self._name} 기사 파싱 실패: {e}")
                 continue

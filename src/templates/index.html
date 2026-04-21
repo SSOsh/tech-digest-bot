@@ -249,12 +249,28 @@
                     <div class="checkbox-group">
                         {% for id, source in sources.items() %}
                         <label>
-                            <input type="checkbox" name="sources" value="{{ id }}" checked>
+                            <input type="checkbox" name="sources" value="{{ id }}" checked onchange="toggleSourceOptions('{{ id }}')">
                             {{ source.name }}
                         </label>
                         {% endfor %}
                     </div>
                 </div>
+
+                <!-- 소스별 옵션 설정 -->
+                {% for id, source in sources.items() %}
+                <div class="form-group source-options" id="options-{{ id }}">
+                    <label for="{{ id }}_option">{{ source.name }} 옵션</label>
+                    {% if source.supports_points %}
+                    <input type="number" id="{{ id }}_top_n" name="{{ id }}_top_n"
+                           placeholder="Top N (예: 10, 15, 20)" min="1">
+                    <p class="help-text">점수 기준 상위 N개 기사만 수신 (비워두면 전체)</p>
+                    {% else %}
+                    <input type="number" id="{{ id }}_limit" name="{{ id }}_limit"
+                           placeholder="최대 개수 (예: 10, 20)" min="1">
+                    <p class="help-text">최대 N개 기사만 수신 (비워두면 전체)</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
 
                 <div class="form-group">
                     <label for="min_points">최소 점수 (GeekNews)</label>
@@ -275,13 +291,20 @@
                     <div class="sub-info">
                         <strong>{{ sub.email or sub.slack_webhook[:40] + '...' }}</strong>
                         <span>
-                            {% if sub.keywords %}키워드: {{ sub.keywords }}{% else %}전체{% endif %}
+                            {% if sub.keywords %}키워드: {{ sub.keywords %}{% else %}전체{% endif %}
                             | {{ sub.sources if sub.sources else '전체 소스' }}
+                            {% if sub.source_options %} | 옵션: {{ sub.source_options }}{% endif %}
                         </span>
+                        <div class="help-text" style="margin-top: 4px;">
+                            <a href="/edit/{{ sub.unsubscribe_token }}">설정 수정</a> |
+                            <a href="/unsubscribe/{{ sub.unsubscribe_token }}">구독 취소</a>
+                        </div>
                     </div>
-                    <form action="/unsubscribe/{{ sub.id }}" method="post" style="margin: 0;">
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('구독을 취소하시겠습니까?')">취소</button>
-                    </form>
+                    <div style="display: flex; gap: 8px;">
+                        <form action="/test-send/{{ sub.id }}" method="post" style="margin: 0;">
+                            <button type="submit" class="btn btn-danger" style="background: #28a745; padding: 8px 16px; width: auto; font-size: 14px;" onclick="return confirm('테스트 메일을 즉시 발송하시겠습니까?')">테스트 발송</button>
+                        </form>
+                    </div>
                 </li>
                 {% endfor %}
             </ul>
@@ -307,6 +330,27 @@
                 slackGroup.classList.remove('hidden');
             }
         }
+
+        function toggleSourceOptions(sourceId) {
+            const checkbox = document.querySelector(`input[name="sources"][value="${sourceId}"]`);
+            const optionsDiv = document.getElementById(`options-${sourceId}`);
+
+            if (checkbox && optionsDiv) {
+                if (checkbox.checked) {
+                    optionsDiv.classList.remove('hidden');
+                } else {
+                    optionsDiv.classList.add('hidden');
+                }
+            }
+        }
+
+        // 페이지 로드 시 모든 소스 옵션 표시 상태 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const sourceCheckboxes = document.querySelectorAll('input[name="sources"]');
+            sourceCheckboxes.forEach(checkbox => {
+                toggleSourceOptions(checkbox.value);
+            });
+        });
     </script>
 </body>
 </html>

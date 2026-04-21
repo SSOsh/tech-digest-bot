@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구독 설정 수정 - Tech Digest Bot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #0052a3;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ 구독 설정 수정</h1>
+        <p class="subtitle">{{ subscription.email or subscription.slack_webhook[:40] + '...' }}</p>
+
+        <div class="card">
+            <div class="info-box">
+                📌 이메일 주소나 알림 방식은 변경할 수 없습니다. 키워드, 소스, 옵션만 수정 가능합니다.
+            </div>
+
+            <form action="/edit/{{ subscription.unsubscribe_token }}" method="post">
+                <div class="form-group">
+                    <label for="keywords">키워드 (선택)</label>
+                    <input type="text" id="keywords" name="keywords" value="{{ subscription.keywords }}" placeholder="python, kubernetes, ai">
+                    <p class="help-text">쉼표로 구분, 비워두면 전체 수신</p>
+                </div>
+
+                <div class="form-group">
+                    <label>소스 선택</label>
+                    <div class="checkbox-group">
+                        {% set selected_sources = subscription.sources.split(',') if subscription.sources else [] %}
+                        {% for id, source in sources.items() %}
+                        <label>
+                            <input type="checkbox" name="sources" value="{{ id }}" {% if id in selected_sources %}checked{% endif %} onchange="toggleSourceOptions('{{ id }}')">
+                            {{ source.name }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 소스별 옵션 설정 -->
+                {% for id, source in sources.items() %}
+                {% set opts = source_options.get(id, {}) %}
+                <div class="form-group source-options" id="options-{{ id }}">
+                    <label for="{{ id }}_option">{{ source.name }} 옵션</label>
+                    {% if source.supports_points %}
+                    <input type="number" id="{{ id }}_top_n" name="{{ id }}_top_n"
+                           value="{{ opts.get('top_n', '') }}" placeholder="Top N (예: 10, 15, 20)" min="1">
+                    <p class="help-text">점수 기준 상위 N개 기사만 수신 (비워두면 전체)</p>
+                    {% else %}
+                    <input type="number" id="{{ id }}_limit" name="{{ id }}_limit"
+                           value="{{ opts.get('limit', '') }}" placeholder="최대 개수 (예: 10, 20)" min="1">
+                    <p class="help-text">최대 N개 기사만 수신 (비워두면 전체)</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="form-group">
+                    <label for="min_points">최소 점수 (GeekNews)</label>
+                    <input type="number" id="min_points" name="min_points" value="{{ subscription.min_points }}" min="0">
+                    <p class="help-text">GeekNews 추천 점수 필터 (0이면 필터 없음)</p>
+                </div>
+
+                <button type="submit" class="btn">설정 저장</button>
+            </form>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="/" style="color: #666; text-decoration: none; font-size: 14px;">← 홈으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSourceOptions(sourceId) {
+            const checkbox = document.querySelector(`input[name="sources"][value="${sourceId}"]`);
+            const optionsDiv = document.getElementById(`options-${sourceId}`);
+
+            if (checkbox && optionsDiv) {
+                if (checkbox.checked) {
+                    optionsDiv.classList.remove('hidden');
+                } else {
+                    optionsDiv.classList.add('hidden');
+                }
+            }
+        }
+
+        // 페이지 로드 시 모든 소스 옵션 표시 상태 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const sourceCheckboxes = document.querySelectorAll('input[name="sources"]');
+            sourceCheckboxes.forEach(checkbox => {
+                toggleSourceOptions(checkbox.value);
+            });
+        });
+    </script>
+</body>
+</html>
